@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:animation_maker/test.dart';
+import 'package:animation_maker/my_animation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -147,14 +147,28 @@ class _MyHomePageState extends State<MyHomePage>
             builder: (context, setState) {
               mySetState = setState;
               myAnimation.points = points.map((e) => e.pos).toList();
-              return Positioned(
-                  right: 40,
-                  bottom: myAnimation.transform(animation.value) * 80,
-                  child: Icon(
-                    Icons.circle,
-                    color: Colors.blue,
-                    size: 20,
-                  ));
+              return SizedBox.expand(
+                child: Stack(
+                  children: [
+                    Positioned(
+                        right: 40,
+                        bottom: myAnimation.transform(animation.value) * 80,
+                        child: Icon(
+                          Icons.circle,
+                          color: Colors.blue,
+                          size: 20,
+                        )),
+                    Positioned(
+                        bottom: 40,
+                        right: 100 + myAnimation.transform(animation.value) * 80,
+                        child: Icon(
+                          Icons.circle,
+                          color: Colors.blue,
+                          size: 20,
+                        )),
+                  ],
+                ),
+              );
             },
           ),
           SizedBox.expand(
