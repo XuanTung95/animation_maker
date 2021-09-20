@@ -2,8 +2,10 @@ import 'dart:ui';
 import 'package:flutter/animation.dart';
 
 class MyAnimation extends Animatable<double> {
-  List<Offset> points = [];
+  List<Offset> points;
   int idx = 0;
+
+  MyAnimation({this.points = const []});
 
   @override
   transform(double t) {
@@ -34,14 +36,18 @@ class MyAnimation extends Animatable<double> {
     return end.dy;
   }
 
-  static String genCode(List<Offset> points) {
+  static String genCode(List<List<Offset>> list, {bool onlyArray = false}) {
     String code = '''
     import 'dart:ui';
     import 'package:flutter/animation.dart';
     
+    POINTS_GO_HERE
+    
     class MyAnimation extends Animatable<double> {
-      List<Offset> points = [POINTS_GO_HERE];
+      List<Offset> points = [];
       int idx = 0;
+    
+      MyAnimation({this.points = const []});
     
       @override
       transform(double t) {
@@ -74,10 +80,19 @@ class MyAnimation extends Animatable<double> {
     }
     ''';
     String str = '';
-    points.forEach((e) {
-      str += 'Offset(${e.dx},${e.dy}),';
-    });
-    code = code.replaceFirst('POINTS_GO_HERE', str);
-    return code;
+    for(int i=0; i<list.length; i++){
+      var points = list[i];
+      str += 'var ANIMATION_$i = [';
+      points.forEach((e) {
+        str += 'Offset(${e.dx},${e.dy}), ';
+      });
+      str += '];\n';
+    }
+    if (onlyArray) {
+      return str;
+    } else {
+      code = code.replaceFirst('POINTS_GO_HERE', str);
+      return code;
+    }
   }
 }

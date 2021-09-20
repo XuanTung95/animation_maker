@@ -48,8 +48,10 @@ class Point {
 
   bool panDown = false;
 
-  Widget build(BuildContext context, int index) {
-    var size = MediaQuery.of(context).size;
+  Widget build(BuildContext context, int index, Color color) {
+    var size = MediaQuery
+        .of(context)
+        .size;
     var _pos = getPos(size);
     return Positioned(
         bottom: _pos.dy - 15 / 2,
@@ -81,13 +83,13 @@ class Point {
           child: Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.green,
+              color: color,
             ),
             child: Center(
                 child: Text(
-              '$index',
-              style: TextStyle(fontSize: 10, color: Colors.white),
-            )),
+                  '$index',
+                  style: TextStyle(fontSize: 10, color: Colors.white),
+                )),
           ),
         ));
   }
@@ -95,13 +97,15 @@ class Point {
 
 class _MyHomePageState extends State<MyHomePage>
     with SingleTickerProviderStateMixin {
-  List<Point> points = [];
+  List<List<Point>> points = [];
+  int currIndex = 0;
   late AnimationController animation;
   StateSetter? mySetState;
   MyAnimation myAnimation = MyAnimation();
   Uint8List? bgImage;
 
   _MyHomePageState() {
+    points.add([]);
     initPoints();
   }
 
@@ -110,10 +114,12 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   void initPoints() {
-    points = [
+    List<Point> lst = points[currIndex];
+    lst.clear();
+    lst.addAll([
       Point(Offset(0, 0.5), callback: callBack),
       Point(Offset(1, 0.5), callback: callBack),
-    ];
+    ]);
   }
 
   @override
@@ -121,7 +127,7 @@ class _MyHomePageState extends State<MyHomePage>
     super.initState();
     animation = AnimationController(
       vsync: this,
-      duration: Duration(seconds: 3),
+      duration: Duration(seconds: 1),
     );
     animation.addListener(updateAnimation);
     animation.repeat();
@@ -139,34 +145,16 @@ class _MyHomePageState extends State<MyHomePage>
           if (bgImage != null)
             SizedBox.expand(
                 child: Image.memory(
-              bgImage!,
-              fit: BoxFit.fill,
-            )),
+                  bgImage!,
+                  fit: BoxFit.fill,
+                )),
           SizedBox.expand(child: buildLine()),
           StatefulBuilder(
             builder: (context, setState) {
               mySetState = setState;
-              myAnimation.points = points.map((e) => e.pos).toList();
               return SizedBox.expand(
                 child: Stack(
-                  children: [
-                    Positioned(
-                        right: 40,
-                        bottom: myAnimation.transform(animation.value) * 80,
-                        child: Icon(
-                          Icons.circle,
-                          color: Colors.blue,
-                          size: 20,
-                        )),
-                    Positioned(
-                        bottom: 40,
-                        right: 100 + myAnimation.transform(animation.value) * 80,
-                        child: Icon(
-                          Icons.circle,
-                          color: Colors.blue,
-                          size: 20,
-                        )),
-                  ],
+                  children: buildAnimation(),
                 ),
               );
             },
@@ -178,18 +166,20 @@ class _MyHomePageState extends State<MyHomePage>
               },
               onTapUp: (detail) {
                 print(detail);
-                var size = MediaQuery.of(context).size;
+                var size = MediaQuery
+                    .of(context)
+                    .size;
                 setState(() {
                   Point p = Point(
                       Offset(detail.globalPosition.dx / size.width,
                           1 - detail.globalPosition.dy / size.height),
                       callback: callBack, remove: (item) {
                     setState(() {
-                      points.remove(item);
+                      points[currIndex].remove(item);
                       sort();
                     });
                   });
-                  points.add(p);
+                  points[currIndex].add(p);
                   sort();
                 });
               },
@@ -197,58 +187,167 @@ class _MyHomePageState extends State<MyHomePage>
           ),
           ...buildPoint(),
           Positioned(
+            bottom: 20,
+            left: 30,
+            child: Container(
+              width: 50,
+              height: 5,
+              color: getColorIndex(currIndex),
+            ),
+          ),
+          Positioned(
               bottom: 30,
               left: 30,
               child: Row(
                 children: [
-                  SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: FloatingActionButton(
-                      onPressed: () {
-                        setState(() {
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: FloatingActionButton(
+                        onPressed: () {
+                          if (points.length == 1) return;
+                          currIndex = (currIndex+1) % points.length;
+                          setState(() {
+                          });
+                        },
+                        child: FittedBox(
+                          child: Text(
+                            'Chg Idx',
+                            style: TextStyle(fontSize: 10),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: FloatingActionButton(
+                        onPressed: () {
+                          setState(() {
+                            initPoints();
+                          });
+                        },
+                        child: FittedBox(
+                          child: Text(
+                            'Clear',
+                            style: TextStyle(fontSize: 10),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: FloatingActionButton(
+                        onPressed: () async {
+                          final ImagePicker _picker = ImagePicker();
+                          // Pick an image
+                          final XFile? image = await _picker.pickImage(
+                              source: ImageSource.gallery);
+                          if (image != null) {
+                            bgImage = await image.readAsBytes();
+                            setState(() {});
+                          }
+                        },
+                        child: FittedBox(
+                          child: Text(
+                            'Image',
+                            style: TextStyle(fontSize: 10),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: FloatingActionButton(
+                        onPressed: () {
+                          String code = MyAnimation.genCode(points.map((e) =>
+                          e.map((l) => l.pos).toList()).toList());
+                          Clipboard.setData(ClipboardData(text: code));
+                        },
+                        child: FittedBox(
+                          child: Text(
+                            'Code',
+                            style: TextStyle(fontSize: 10),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: FloatingActionButton(
+                        onPressed: () {
+                          String code = MyAnimation.genCode(points.map((e) =>
+                              e.map((l) => l.pos).toList()).toList(), onlyArray: true);
+                          Clipboard.setData(ClipboardData(text: code));
+                        },
+                        child: FittedBox(
+                          child: Text(
+                            'Point',
+                            style: TextStyle(fontSize: 10),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: FloatingActionButton(
+                        onPressed: () {
+                          points.add([]);
+                          currIndex = points.length - 1;
                           initPoints();
-                        });
-                      },
-                      child: Text(
-                        'Clear',
-                        style: TextStyle(fontSize: 12),
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 20,),
-                  SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: FloatingActionButton(
-                      onPressed: () async {
-                        final ImagePicker _picker = ImagePicker();
-                        // Pick an image
-                        final XFile? image = await _picker.pickImage(
-                            source: ImageSource.gallery);
-                        if (image != null) {
-                          bgImage = await image.readAsBytes();
                           setState(() {});
-                        }
-                      },
-                      child: Text(
-                        'Image',
-                        style: TextStyle(fontSize: 12),
+                        },
+                        child: FittedBox(
+                          child: Text(
+                            'Add',
+                            style: TextStyle(fontSize: 10),
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                  SizedBox(width: 20,),
-                  SizedBox(
-                    width: 40,
-                    height: 40,
-                    child: FloatingActionButton(
-                      onPressed: () {
-                        String code = MyAnimation.genCode(points.map((e) => e.pos).toList());
-                        Clipboard.setData(ClipboardData(text: code));
-                      },
-                      child: Text(
-                        'Code',
-                        style: TextStyle(fontSize: 12),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: FloatingActionButton(
+                        onPressed: () {
+                          if (points.length > 1) {
+                            points.removeAt(currIndex);
+                            if (currIndex > points.length - 1) {
+                              currIndex = points.length - 1;
+                            }
+                            setState(() {});
+                          }
+                        },
+                        child: FittedBox(
+                          child: Text(
+                            'Del',
+                            style: TextStyle(fontSize: 10),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -262,40 +361,96 @@ class _MyHomePageState extends State<MyHomePage>
   List<Widget> buildPoint() {
     List<Widget> ret = [];
     for (int i = 0; i < points.length; i++) {
-      ret.add(points[i].build(context, i));
+      var curr = points[i];
+      var color = getColorIndex(i);
+      for(int j = 0; j < curr.length; j++) {
+        ret.add(curr[j].build(context, j, color));
+      }
     }
     return ret;
   }
 
   Widget buildLine() {
+    List<Widget> children = [];
+    for(int i=0; i< points.length; i++) {
+      var item = points[i];
+      children.add(CustomPaint(
+        painter: MyCustomPainter(item, getColorIndex(i)),
+        child: SizedBox.expand(),
+      ));
+    }
     return IgnorePointer(
       child: Container(
         color: Colors.transparent,
-        child: CustomPaint(
-          painter: MyCustomPainter(points),
-          child: SizedBox.expand(),
+        child: Stack(
+          children: children,
         ),
       ),
     );
   }
 
   void sort() {
-    points.sort((o1, o2) {
-      if (o1.pos.dx > o2.pos.dx) {
-        return 1;
-      } else if (o1.pos.dx < o2.pos.dx) {
-        return -1;
-      } else {
-        return 0;
-      }
+    points.forEach((e) {
+      e.sort((o1, o2) {
+        if (o1.pos.dx > o2.pos.dx) {
+          return 1;
+        } else if (o1.pos.dx < o2.pos.dx) {
+          return -1;
+        } else {
+          return 0;
+        }
+      });
     });
+  }
+
+  Color getColorIndex(int i) {
+    List<Color> colors = [
+      Colors.orangeAccent,
+      Colors.green,
+      Colors.red,
+      Colors.blue,
+      Colors.blueGrey,
+      Colors.cyanAccent,
+      Colors.pink,
+      Colors.deepOrange,
+    ];
+    return colors[i%colors.length];
+  }
+
+  List<Widget> buildAnimation() {
+    List<Widget> ret = [];
+    for (int i = 0; i < points.length; i++) {
+      var color = getColorIndex(i);
+      var lst = points[i];
+      myAnimation.points = lst.map((e) => e.pos).toList();
+      ret.addAll([
+        Positioned(
+            right: 40,
+            bottom: myAnimation.transform(animation.value) * 80,
+            child: Icon(
+              Icons.circle,
+              color: color,
+              size: 20,
+            )),
+        Positioned(
+            bottom: 40,
+            right: 100 + myAnimation.transform(animation.value) * 80,
+            child: Icon(
+              Icons.circle,
+              color: color,
+              size: 20,
+            )),
+      ]);
+    }
+    return ret;
   }
 }
 
 class MyCustomPainter extends CustomPainter {
   final List<Point> points;
+  final Color color;
 
-  MyCustomPainter(this.points);
+  MyCustomPainter(this.points, this.color);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -311,7 +466,7 @@ class MyCustomPainter extends CustomPainter {
     }
     var paint = Paint()
       ..style = PaintingStyle.stroke
-      ..color = Colors.deepOrange
+      ..color = color
       ..strokeWidth = 2;
     canvas.drawPath(path, paint);
   }
