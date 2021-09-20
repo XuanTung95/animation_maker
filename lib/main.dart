@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:animation_maker/my_animation.dart';
+import 'package:animation_maker/parse_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -49,9 +50,7 @@ class Point {
   bool panDown = false;
 
   Widget build(BuildContext context, int index, Color color) {
-    var size = MediaQuery
-        .of(context)
-        .size;
+    var size = MediaQuery.of(context).size;
     var _pos = getPos(size);
     return Positioned(
         bottom: _pos.dy - 15 / 2,
@@ -87,9 +86,9 @@ class Point {
             ),
             child: Center(
                 child: Text(
-                  '$index',
-                  style: TextStyle(fontSize: 10, color: Colors.white),
-                )),
+              '$index',
+              style: TextStyle(fontSize: 10, color: Colors.white),
+            )),
           ),
         ));
   }
@@ -145,9 +144,9 @@ class _MyHomePageState extends State<MyHomePage>
           if (bgImage != null)
             SizedBox.expand(
                 child: Image.memory(
-                  bgImage!,
-                  fit: BoxFit.fill,
-                )),
+              bgImage!,
+              fit: BoxFit.fill,
+            )),
           SizedBox.expand(child: buildLine()),
           StatefulBuilder(
             builder: (context, setState) {
@@ -166,9 +165,7 @@ class _MyHomePageState extends State<MyHomePage>
               },
               onTapUp: (detail) {
                 print(detail);
-                var size = MediaQuery
-                    .of(context)
-                    .size;
+                var size = MediaQuery.of(context).size;
                 setState(() {
                   Point p = Point(
                       Offset(detail.globalPosition.dx / size.width,
@@ -208,9 +205,8 @@ class _MyHomePageState extends State<MyHomePage>
                       child: FloatingActionButton(
                         onPressed: () {
                           if (points.length == 1) return;
-                          currIndex = (currIndex+1) % points.length;
-                          setState(() {
-                          });
+                          currIndex = (currIndex + 1) % points.length;
+                          setState(() {});
                         },
                         child: FittedBox(
                           child: Text(
@@ -234,7 +230,7 @@ class _MyHomePageState extends State<MyHomePage>
                         },
                         child: FittedBox(
                           child: Text(
-                            'Clear',
+                            'Reset',
                             style: TextStyle(fontSize: 10),
                           ),
                         ),
@@ -273,8 +269,9 @@ class _MyHomePageState extends State<MyHomePage>
                       height: 30,
                       child: FloatingActionButton(
                         onPressed: () {
-                          String code = MyAnimation.genCode(points.map((e) =>
-                          e.map((l) => l.pos).toList()).toList());
+                          String code = MyAnimation.genCode(points
+                              .map((e) => e.map((l) => l.pos).toList())
+                              .toList());
                           Clipboard.setData(ClipboardData(text: code));
                         },
                         child: FittedBox(
@@ -293,8 +290,11 @@ class _MyHomePageState extends State<MyHomePage>
                       height: 30,
                       child: FloatingActionButton(
                         onPressed: () {
-                          String code = MyAnimation.genCode(points.map((e) =>
-                              e.map((l) => l.pos).toList()).toList(), onlyArray: true);
+                          String code = MyAnimation.genCode(
+                              points
+                                  .map((e) => e.map((l) => l.pos).toList())
+                                  .toList(),
+                              onlyArray: true);
                           Clipboard.setData(ClipboardData(text: code));
                         },
                         child: FittedBox(
@@ -351,6 +351,113 @@ class _MyHomePageState extends State<MyHomePage>
                       ),
                     ),
                   ),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: SizedBox(
+                      width: 30,
+                      height: 30,
+                      child: FloatingActionButton(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) {
+                              TextEditingController txtController =
+                                  TextEditingController();
+                              return Dialog(
+                                child: SizedBox(
+                                  width: 50,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text('Code: '),
+                                          Expanded(
+                                            child: TextField(
+                                              controller: txtController,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: TextButton(
+                                                onPressed: () {
+                                                  Navigator.of(context).pop();
+                                                  var listAnimationString =
+                                                      ParseString.parse(
+                                                          txtController.text,
+                                                          '[',
+                                                          ']');
+                                                  if (listAnimationString
+                                                      .isEmpty) return;
+                                                  List<List<Point>> newPoint =
+                                                      [];
+                                                  listAnimationString.forEach(
+                                                      (animationString) {
+                                                    List<Offset> lstOffset = [];
+                                                    var offsets =
+                                                        ParseString.parse(
+                                                            animationString,
+                                                            '(',
+                                                            ')');
+                                                    offsets.forEach((dx_dy) {
+                                                      var number =
+                                                          dx_dy.split(',');
+                                                      if (number.length == 2) {
+                                                        lstOffset.add(Offset(
+                                                            double.parse(
+                                                                number[0]
+                                                                    .trim()),
+                                                            double.parse(
+                                                                number[1]
+                                                                    .trim())));
+                                                      }
+                                                    });
+                                                    if (lstOffset.isNotEmpty) {
+                                                      int index =
+                                                          newPoint.length;
+                                                      newPoint.add(
+                                                          lstOffset.map((pos) {
+                                                        return Point(pos,
+                                                            callback: callBack,
+                                                            remove: (item) {
+                                                          setState(() {
+                                                            points[index]
+                                                                .remove(item);
+                                                            sort();
+                                                          });
+                                                        });
+                                                      }).toList());
+                                                    }
+                                                  });
+                                                  if (newPoint.isNotEmpty) {
+                                                    points = newPoint;
+                                                    sort();
+                                                    setState(() {});
+                                                  }
+                                                },
+                                                child: Text('OK')),
+                                          )
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                        child: FittedBox(
+                          child: Text(
+                            'In',
+                            style: TextStyle(fontSize: 10),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ))
         ],
@@ -363,7 +470,7 @@ class _MyHomePageState extends State<MyHomePage>
     for (int i = 0; i < points.length; i++) {
       var curr = points[i];
       var color = getColorIndex(i);
-      for(int j = 0; j < curr.length; j++) {
+      for (int j = 0; j < curr.length; j++) {
         ret.add(curr[j].build(context, j, color));
       }
     }
@@ -372,7 +479,7 @@ class _MyHomePageState extends State<MyHomePage>
 
   Widget buildLine() {
     List<Widget> children = [];
-    for(int i=0; i< points.length; i++) {
+    for (int i = 0; i < points.length; i++) {
       var item = points[i];
       children.add(CustomPaint(
         painter: MyCustomPainter(item, getColorIndex(i)),
@@ -414,7 +521,7 @@ class _MyHomePageState extends State<MyHomePage>
       Colors.pink,
       Colors.deepOrange,
     ];
-    return colors[i%colors.length];
+    return colors[i % colors.length];
   }
 
   List<Widget> buildAnimation() {
