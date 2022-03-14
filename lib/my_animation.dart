@@ -1,24 +1,25 @@
 import 'dart:ui';
 import 'package:flutter/animation.dart';
 
-class MyAnimation extends Animatable<double> {
+class CustomAnimation extends Animatable<double> {
   List<Offset> points;
-  int idx = 0;
+  int _lastIdx = 0;
 
-  MyAnimation({this.points = const []});
+  CustomAnimation({this.points = const []});
 
   @override
   transform(double t) {
+    // find the start and end point in the time line
     Offset? start;
     Offset end = points.last;
-    int si = 0;
-    if (idx < points.length - 1 && t > points[idx].dx) {
-      si = idx + 1;
+    int startIndex = 0;
+    if (_lastIdx < points.length - 1 && t > points[_lastIdx].dx) {
+      startIndex = _lastIdx + 1;
     }
-    for (int i = si; i < points.length; i++) {
+    for (int i = startIndex; i < points.length; i++) {
       if (t <= points[i].dx) {
         end = points[i];
-        idx = i;
+        _lastIdx = i;
         if (i > 0) {
           start = points[i - 1];
         }
@@ -26,8 +27,10 @@ class MyAnimation extends Animatable<double> {
       }
     }
     if (start == null) {
+      // no start point
       return end.dy;
     } else {
+      // calculate the output between start-end
       double tx = end.dx - start.dx;
       if (tx > 0) {
         return start.dy + (t - start.dx) * (end.dy - start.dy) / tx;
@@ -43,26 +46,26 @@ class MyAnimation extends Animatable<double> {
     
     POINTS_GO_HERE
     
-    class MyAnimation extends Animatable<double> {
-      List<Offset> points = [];
-      int idx = 0;
+    class CustomAnimation extends Animatable<double> {
+      List<Offset> points;
+      int _lastIdx = 0;
     
-      MyAnimation({this.points = const []});
+      CustomAnimation({this.points = const []});
     
       @override
       transform(double t) {
         Offset? start;
         Offset end = points.last;
-        int si = 0;
-        if (idx < points.length - 1 && t > points[idx].dx) {
-          si = idx + 1;
+        int startIndex = 0;
+        if (_lastIdx < points.length - 1 && t > points[_lastIdx].dx) {
+          startIndex = _lastIdx + 1;
         }
-        for (int i = si; i < points.length; i++) {
+        for (int i = startIndex; i < points.length; i++) {
           if (t <= points[i].dx) {
             end = points[i];
-            idx = i;
-            if (i>0) {
-              start = points[i-1];
+            _lastIdx = i;
+            if (i > 0) {
+              start = points[i - 1];
             }
             break;
           }
